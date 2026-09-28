@@ -1,0 +1,107 @@
+# Панель состояния антенн NFC и слотов ACE Pro для Home Assistant.
+#
+# Положить файл в packages/ и подключить в configuration.yaml:
+#   homeassistant:
+#     packages: !include_dir_named packages
+#
+# Источник данных — Moonraker на принтере. Опрос идёт со стороны Home
+# Assistant, то есть с сервера, поэтому CORS не возникает и правки в
+# moonraker.conf не нужны.
+#
+# Имена сущностей заданы латиницей осознанно: Home Assistant строит
+# entity_id транслитерацией, и русское имя дало бы непредсказуемый
+# идентификатор, на который потом нельзя надёжно ссылаться. Русские
+# подписи задаются в дашборде (ace_nfc_dashboard.yaml).
+#
+# ГРАНИЦА ВОЗМОЖНОСТЕЙ, о которой надо помнить, читая панель.
+# Заводская прошивка ACE Pro сообщает о чтении метки единственным числом
+# rfid со значениями 0..3. Значение 1 означает одновременно «антенна
+# ничего не видит» и «метка есть, но разметку не понял»: различить эти два
+# случая по данным прошивки НЕВОЗМОЖНО. Значение 3 («читаю») живёт доли
+# секунды и при опросе раз в 5 секунд в кадр обычно не попадает.
+# Поэтому панель показывает РЕЗУЛЬТАТ чтения, а не процесс. Настоящее
+# «вижу / не вижу» в момент опроса поля даст только патч прошивки с
+# туннелем к регистрам считывателя.
+#
+# Соответствие слотов и физических плат считывателей: плат две (NFC1 и
+# NFC2), каждая обслуживает два слота. Слоты 1-2 — первая плата,
+# слоты 3-4 — вторая. Если «не вижу» показывают оба слота одной платы, а
+# на другой всё в порядке, подозрение падает на плату, а не на метки.
+
+rest:
+  - resource: http://<printer-ip>:7125/printer/objects/query?ace
+    scan_interval: 5
+    timeout: 10
+    sensor:
+      - name: ace slot 1 tag
+        unique_id: ace0_slot1_tag
+        icon: mdi:nfc-variant
+        value_template: >-
+          {% set s = value_json.result.status.ace.aces[0].slots[0] %}
+          {{ {0: 'нет данных', 1: 'не вижу или не распознал',
+              2: 'прочитал', 3: 'читаю'}.get(s.rfid | int, 'неизвестно') }}
+        json_attributes_path: "$.result.status.ace.aces[0].slots[0]"
+        json_attributes: [index, status, sku, brand, material, subtype, rfid, uid, tag_format, color]
+
+      - name: ace slot 2 tag
+        unique_id: ace0_slot2_tag
+        icon: mdi:nfc-variant
+        value_template: >-
+          {% set s = value_json.result.status.ace.aces[0].slots[1] %}
+          {{ {0: 'нет данных', 1: 'не вижу или не распознал',
+              2: 'прочитал', 3: 'читаю'}.get(s.rfid | int, 'неизвестно') }}
+        json_attributes_path: "$.result.status.ace.aces[0].slots[1]"
+        json_attributes: [index, status, sku, brand, material, subtype, rfid, uid, tag_format, color]
+
+      - name: ace slot 3 tag
+        unique_id: ace0_slot3_tag
+        icon: mdi:nfc-variant
+        value_template: >-
+          {% set s = value_json.result.status.ace.aces[0].slots[2] %}
+          {{ {0: 'нет данных', 1: 'не вижу или не распознал',
+              2: 'прочитал', 3: 'читаю'}.get(s.rfid | int, 'неизвестно') }}
+        json_attributes_path: "$.result.status.ace.aces[0].slots[2]"
+        json_attributes: [index, status, sku, brand, material, subtype, rfid, uid, tag_format, color]
+
+      - name: ace slot 4 tag
+        unique_id: ace0_slot4_tag
+        icon: mdi:nfc-variant
+        value_template: >-
+          {% set s = value_json.result.status.ace.aces[0].slots[3] %}
+          {{ {0: 'нет данных', 1: 'не вижу или не распознал',
+              2: 'прочитал', 3: 'читаю'}.get(s.rfid | int, 'неизвестно') }}
+        json_attributes_path: "$.result.status.ace.aces[0].slots[3]"
+        json_attributes: [index, status, sku, brand, material, subtype, rfid, uid, tag_format, color]
+
+      - name: ace state
+        unique_id: ace0_state
+        icon: mdi:printer-3d-nozzle
+        value_template: "{{ value_json.result.status.ace.aces[0].status }}"
+        json_attributes_path: "$.result.status.ace.aces[0]"
+        json_attributes: [connected, protocol, model, firmware, temp, humidity, gate_status, auto_dry, auto_dry_running, dryer_status]
+
+      - name: ace chamber temp
+        unique_id: ace0_chamber_temp
+        device_class: temperature
+        unit_of_measurement: "°C"
+        state_class: measurement
+        value_template: "{{ value_json.result.status.ace.aces[0].temp }}"
+
+template:
+  - binary_sensor:
+      # Плата считывателя подтверждена, когда хотя бы один её слот прямо
+      # сейчас отдаёт распознанную метку. Это не диагностика в реальном
+      # времени, а признак «плата отвечает и метку видит».
+      - name: ace reader nfc1 confirmed
+        unique_id: ace0_reader1_confirmed
+        icon: mdi:nfc-search-variant
+        state: >-
+          {{ state_attr('sensor.ace_slot_1_tag', 'rfid') | int(0) == 2
+             or state_attr('sensor.ace_slot_2_tag', 'rfid') | int(0) == 2 }}
+
+      - name: ace reader nfc2 confirmed
+        unique_id: ace0_reader2_confirmed
+        icon: mdi:nfc-search-variant
+        state: >-
+          {{ state_attr('sensor.ace_slot_3_tag', 'rfid') | int(0) == 2
+             or state_attr('sensor.ace_slot_4_tag', 'rfid') | int(0) == 2 }}

@@ -1,0 +1,42 @@
+services:
+  ace-rh-feeder:
+    build: .
+    container_name: ace-rh-feeder
+    restart: unless-stopped
+    # host-сеть и сокет D-Bus нужны для доступа к BlueZ, как у контейнера HA
+    # на этой же машине (docker inspect homeassistant: NetworkMode=host,
+    # том /run/dbus:/run/dbus:ro).
+    network_mode: host
+    volumes:
+      - /run/dbus:/run/dbus:ro
+    # Профиль AppArmor по умолчанию (docker-default) блокирует системные
+    # вызовы D-Bus (AddMatch и т.п.), которые использует bleak/dbus-fast для
+    # общения с BlueZ: без этой строки чтение датчика падает с
+    # "AppArmor policy prevents this sender...". Контейнер homeassistant на
+    # этой же машине по той же причине запущен без confinement
+    # (docker inspect homeassistant: AppArmorProfile "unconfined",
+    # SecurityOpt ["label=disable"]) — повторяем тот же эффект.
+    security_opt:
+      - apparmor:unconfined
+    environment:
+      - SENSOR_MAC=AA:BB:CC:DD:EE:FF
+      - MOONRAKER_URL=http://<printer-ip>:7125
+      - ACE_INDEX=0
+      # RH_TTL_SECONDS обязан быть не меньше ТРОЙНОГО INTERVAL_SECONDS
+      # (сейчас 1800 против 300 — запас шестикратный). Показание живёт на
+      # принтере ровно TTL, после чего модуль гасит нагрев принудительно:
+      # если срок годности сравним с периодом опроса, показание протухает
+      # между опросами и нагрев мигает циклами длиной в период опроса.
+      # Соотношение проверяется при старте сервиса (check_periods в
+      # ace_rh_feeder/main.py), и контейнер завершится с понятной ошибкой,
+      # если поднять период опроса, забыв про срок годности.
+      - INTERVAL_SECONDS=300
+      - RH_TTL_SECONDS=1800
+      - TZ=UTC
+      # BLE_ADAPTER сознательно не указан вовсе. На этом сервере имя
+      # контроллера нестабильно (после переинициализации USB он видел
+      # один и тот же физический адаптер то как hci0, то как hci1),
+      # поэтому жёстко прописанное имя рано или поздно перестанет
+      # существовать. Отсутствие переменной ace_rh_feeder/sensor.py и
+      # adapter.py трактуют как «не передавать адаптер явно» —
+      # BlueZ сам выбирает единственный присутствующий контроллер.

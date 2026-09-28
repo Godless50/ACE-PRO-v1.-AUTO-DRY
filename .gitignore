@@ -1,0 +1,12 @@
+.venv/
+__pycache__/
+*.pyc
+
+# Секреты прошивки ESP32 и артефакты сборки PlatformIO
+esp32-rh/include/config.h
+esp32-rh/.pio/
+
+# Заводские образы прошивки ACE в репозиторий не попадают:
+# они чужие, храним только свои смещения и стабы
+firmware/ace1/base/
+*.bin

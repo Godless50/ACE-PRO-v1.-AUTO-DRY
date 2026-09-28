@@ -1,0 +1,171 @@
+# Дашборд «Антенны NFC ACE Pro».
+#
+# Вставить как новый дашборд: Настройки — Панели — Добавить панель,
+# затем в режиме правки «Редактировать в YAML» и вставить содержимое.
+# Требует пакета ace_nfc.yaml (он создаёт сущности).
+#
+# Слоты сгруппированы по физическим платам считывателей: NFC1 обслуживает
+# слоты 1-2, NFC2 — слоты 3-4. Если «не вижу» показывают оба слота одной
+# платы, а на другой всё в порядке, дело в плате, а не в метках.
+
+title: Антенны NFC ACE Pro
+views:
+  - title: Антенны
+    path: nfc
+    cards:
+      - type: markdown
+        content: >-
+          ### Что показывает эта панель
+
+          Данные берутся из заводской прошивки ACE. Она сообщает о чтении
+          метки одним числом, и у этого числа есть слепое пятно:
+          **«не вижу» и «вижу, но не распознал» — это одно и то же
+          значение.** Различить пустой слот и слот с нечитаемой меткой по
+          этим данным нельзя.
+
+          Состояние «читаю» живёт доли секунды и при опросе раз в пять
+          секунд почти никогда не попадает в кадр. Панель показывает
+          **результат** чтения, а не процесс.
+
+          Настоящее «вижу / не вижу» в момент опроса поля появится после
+          патча прошивки с туннелем к регистрам считывателя.
+
+          **Проверьте на своём устройстве.** По разбору второго поколения,
+          на пару слотов приходится одна антенна. Если это верно и для
+          первой ревизии, две метки в соседних слотах одной платы мешают
+          друг другу.
+
+      - type: entities
+        title: Считыватель NFC1 — слоты 1 и 2
+        show_header_toggle: false
+        entities:
+          - entity: binary_sensor.ace_reader_nfc1_confirmed
+            name: Плата подтверждена чтением
+          - type: section
+            label: Слот 1
+          - entity: sensor.ace_slot_1_tag
+            name: Метка
+          - type: attribute
+            entity: sensor.ace_slot_1_tag
+            attribute: status
+            name: Состояние слота
+          - type: attribute
+            entity: sensor.ace_slot_1_tag
+            attribute: sku
+            name: Артикул с метки
+          - type: attribute
+            entity: sensor.ace_slot_1_tag
+            attribute: material
+            name: Материал
+          - type: attribute
+            entity: sensor.ace_slot_1_tag
+            attribute: tag_format
+            name: Формат метки
+          - type: attribute
+            entity: sensor.ace_slot_1_tag
+            attribute: uid
+            name: UID метки
+          - type: section
+            label: Слот 2
+          - entity: sensor.ace_slot_2_tag
+            name: Метка
+          - type: attribute
+            entity: sensor.ace_slot_2_tag
+            attribute: status
+            name: Состояние слота
+          - type: attribute
+            entity: sensor.ace_slot_2_tag
+            attribute: sku
+            name: Артикул с метки
+          - type: attribute
+            entity: sensor.ace_slot_2_tag
+            attribute: material
+            name: Материал
+          - type: attribute
+            entity: sensor.ace_slot_2_tag
+            attribute: tag_format
+            name: Формат метки
+          - type: attribute
+            entity: sensor.ace_slot_2_tag
+            attribute: uid
+            name: UID метки
+
+      - type: entities
+        title: Считыватель NFC2 — слоты 3 и 4
+        show_header_toggle: false
+        entities:
+          - entity: binary_sensor.ace_reader_nfc2_confirmed
+            name: Плата подтверждена чтением
+          - type: section
+            label: Слот 3
+          - entity: sensor.ace_slot_3_tag
+            name: Метка
+          - type: attribute
+            entity: sensor.ace_slot_3_tag
+            attribute: status
+            name: Состояние слота
+          - type: attribute
+            entity: sensor.ace_slot_3_tag
+            attribute: sku
+            name: Артикул с метки
+          - type: attribute
+            entity: sensor.ace_slot_3_tag
+            attribute: material
+            name: Материал
+          - type: attribute
+            entity: sensor.ace_slot_3_tag
+            attribute: tag_format
+            name: Формат метки
+          - type: attribute
+            entity: sensor.ace_slot_3_tag
+            attribute: uid
+            name: UID метки
+          - type: section
+            label: Слот 4
+          - entity: sensor.ace_slot_4_tag
+            name: Метка
+          - type: attribute
+            entity: sensor.ace_slot_4_tag
+            attribute: status
+            name: Состояние слота
+          - type: attribute
+            entity: sensor.ace_slot_4_tag
+            attribute: sku
+            name: Артикул с метки
+          - type: attribute
+            entity: sensor.ace_slot_4_tag
+            attribute: material
+            name: Материал
+          - type: attribute
+            entity: sensor.ace_slot_4_tag
+            attribute: tag_format
+            name: Формат метки
+          - type: attribute
+            entity: sensor.ace_slot_4_tag
+            attribute: uid
+            name: UID метки
+
+      - type: entities
+        title: Устройство
+        show_header_toggle: false
+        entities:
+          - entity: sensor.ace_state
+            name: Состояние
+          - entity: sensor.ace_chamber_temp
+            name: Температура камеры
+          - type: attribute
+            entity: sensor.ace_state
+            attribute: firmware
+            name: Прошивка
+          - type: attribute
+            entity: sensor.ace_state
+            attribute: protocol
+            name: Протокол
+          - type: attribute
+            entity: sensor.ace_state
+            attribute: connected
+            name: Связь
+          - type: attribute
+            entity: sensor.ace_state
+            attribute: auto_dry_running
+            name: Сушка идёт
